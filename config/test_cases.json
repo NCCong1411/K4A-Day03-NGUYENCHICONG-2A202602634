@@ -1,0 +1,37 @@
+[
+  {
+    "id": "TC01",
+    "type": "direct_query",
+    "question": "Chào bạn, bạn có thể hỗ trợ tra cứu đơn hàng và kho vận không?",
+    "expected_behavior": "Chatbot trả lời trực tiếp từ System Prompt và nêu khả năng hỗ trợ về đơn hàng, vị trí lưu kho và cập nhật trạng thái.",
+    "complexity": "Low"
+  },
+  {
+    "id": "TC02",
+    "type": "single_tool_query",
+    "question": "Hãy tra cứu thông tin đơn hàng VN2026001.",
+    "expected_behavior": "Agent nhận diện nhu cầu tra cứu đơn hàng, tự động phát sinh Tool Call track_order với mã vận đơn VN2026001.",
+    "complexity": "Medium"
+  },
+  {
+    "id": "TC03",
+    "type": "appointment_booking",
+    "question": "Cập nhật trạng thái đơn hàng VN2026001 thành Đang giao hàng.",
+    "expected_behavior": "Agent tự động phát sinh Tool Call update_order_status để cập nhật trạng thái mới cho đơn hàng VN2026001.",
+    "complexity": "Medium"
+  },
+  {
+    "id": "TC04",
+    "type": "multi_step_reasoning",
+    "question": "Cho tôi biết vị trí lưu kho hiện tại của đơn hàng VN2026001.",
+    "expected_behavior": "Agent phát sinh Tool Call get_warehouse_location và trả về vị trí lưu kho.",
+    "complexity": "High"
+  },
+  {
+    "id": "TC05",
+    "type": "edge_case_handling",
+    "question": "Tra cứu mã vận đơn VN9999999",
+    "expected_behavior": "Agent nhận kết quả NOT_FOUND từ Tool và trả lời lịch sự, không bịa dữ liệu.",
+    "complexity": "Medium"
+  }
+]

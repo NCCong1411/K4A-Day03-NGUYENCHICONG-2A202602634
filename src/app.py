@@ -121,20 +121,46 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPAcademicServer) ->
                 if obs_data.get("status") == "SUCCESS":
                     if "data" in obs_data:
                         d = obs_data["data"]
-                        final_answer = (
-                            f"Kết quả tra cứu cho sinh viên {obs_data.get('student_id', '')} ({d.get('full_name', '')}): "
-                            f"Lớp {d.get('class', '')}, GPA: {d.get('gpa', '')}, Email: {d.get('email', '')}, "
-                            f"Trạng thái: {d.get('status', '')}, Cố vấn: {d.get('advisor', '')}."
-                        )
-                    elif "message" in obs_data:
-                        final_answer = obs_data["message"]
-                    else:
-                        final_answer = f"Đã hoàn tất xử lý qua MCP Server: {json.dumps(obs_data, ensure_ascii=False)}"
+
+                        if tool_name == "track_order":
+                            final_answer = (
+                                f"Đơn hàng {d.get('tracking_code', '')} ({d.get('order_id', '')}) thuộc về "
+                                f"{d.get('customer_name', '')}. Sản phẩm: {d.get('item', '')}, "
+                                f"Số lượng: {d.get('quantity', '')}. "
+                                f"Trạng thái hiện tại: {d.get('status', '')}. "
+                                f"Vị trí kho: {d.get('warehouse_location', '')}. "
+                                f"Điểm đến: {d.get('destination', '')}. "
+                                f"Dự kiến giao: {d.get('eta', '')}."
+                            )
+
+                        elif tool_name == "get_warehouse_location":
+                            final_answer = (
+                                f"Đơn hàng {d.get('tracking_code', '')} đang lưu tại "
+                                f"{d.get('warehouse_location', '')}. "
+                                f"Trạng thái hiện tại: {d.get('status', '')}. "
+                                f"Điểm đến: {d.get('destination', '')}."
+                            )
+
+                        elif tool_name == "update_order_status":
+                            final_answer = (
+                                f"Đã cập nhật trạng thái đơn hàng {d.get('tracking_code', '')} thành "
+                                f"'{d.get('status', '')}'. "
+                                f"Ghi chú: {d.get('last_note', '')}. "
+                                f"Vị trí kho hiện tại: {d.get('warehouse_location', '')}."
+                            )
+
+                        else:
+                            final_answer = f"Đã nhận dữ liệu từ MCP Server: {json.dumps(obs_data, ensure_ascii=False)}"
+
                 elif obs_data.get("status") == "NOT_FOUND":
-                    final_answer = obs_data.get("message", "Không tìm thấy thông tin sinh viên yêu cầu.")
+                    final_answer = obs_data.get(
+                        "message",
+                        f"Không tìm thấy dữ liệu đơn hàng với mã vận đơn hoặc mã đơn hàng '{arguments.get('tracking_code') or arguments.get('order_id')}'."
+                    )
+
                 else:
                     final_answer = f"Phản hồi từ công cụ: {json.dumps(obs_data, ensure_ascii=False)}"
-            
+
             trace_logs.append({
                 "step": step,
                 "query": user_query,
@@ -164,7 +190,7 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPAcademicServer) ->
 
 if __name__ == "__main__":
     print("==========================================================")
-    print("🏫 VINUNI AI COURSE - DAY 03 LAB: CHATBOT VS REACT AGENT")
+    print("🚚 SUPPLY CHAIN AGENT LAB - DAY 03: CHATBOT VS REACT AGENT")
     print("==========================================================")
     
     provider = get_llm_provider()
@@ -179,9 +205,9 @@ if __name__ == "__main__":
     if "--interactive" in sys.argv:
         print("🎮 [INTERACTIVE MODE] Trò chuyện trực tiếp với ReAct Agent:")
         print("💡 Gợi ý câu hỏi thử nghiệm:")
-        print("   - Câu hỏi chung: 'Quy chế học vụ VinUni yêu cầu bao nhiêu tín chỉ?'")
-        print("   - Tra cứu học vụ: 'Hãy tra cứu thông tin học vụ của sinh viên SV2026001'")
-        print("   - Đặt lịch hẹn: 'Đặt lịch hẹn tư vấn cho SV2026001 vào 14:00 ngày 15/09/2026'")
+        print("   - Tra cứu đơn hàng: 'Hãy tra cứu đơn hàng VN2026001'")
+        print("   - Tìm vị trí kho: 'Đơn hàng VN2026001 đang lưu tại kho nào?'")
+        print("   - Cập nhật trạng thái: 'Cập nhật trạng thái đơn hàng VN2026001 thành Đang vận chuyển'")
         print("   - Gõ 'exit' hoặc 'quit' để kết thúc phiên trò chuyện.\n")
         while True:
             try:

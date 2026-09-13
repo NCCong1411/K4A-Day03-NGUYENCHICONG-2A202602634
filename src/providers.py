@@ -6,6 +6,7 @@ Hỗ trợ Native Tool Calling và chuyển đổi linh hoạt qua biến môi t
 import os
 import sys
 import json
+import re
 from typing import Dict, Any, List
 from dotenv import load_dotenv
 
@@ -36,28 +37,59 @@ class MockOfflineProvider(BaseLLMProvider):
 
     def generate_with_tools(self, prompt: str, tools_schema: List[Dict[str, Any]], system_prompt: str = "") -> Dict[str, Any]:
         prompt_lower = prompt.lower()
-        
-        # Mô phỏng nhận diện intent gọi Tool
-        if "sv2026001" in prompt_lower and "đặt lịch" in prompt_lower:
-            return {
-                "type": "tool_call",
-                "tool_name": "schedule_appointment",
-                "arguments": {"student_id": "SV2026001", "datetime_str": "14:00 15/09/2026", "advisor_name": "PGS.TS Nguyễn Văn A"},
-                "thought": "Người dùng yêu cầu đặt lịch hẹn tư vấn cho sinh viên SV2026001. Tôi sẽ gọi tool schedule_appointment."
-            }
-        elif "sv2026001" in prompt_lower or "tra cứu" in prompt_lower:
-            return {
-                "type": "tool_call",
-                "tool_name": "academic_query",
-                "arguments": {"student_id": "SV2026001"},
-                "thought": "Người dùng muốn tra cứu thông tin học vụ của sinh viên SV2026001. Tôi sẽ gọi tool academic_query."
-            }
-        else:
-            return {
-                "type": "text",
-                "content": f"[Mock Agent Response]: Xin chào! Quy chế học vụ VinUni yêu cầu sinh viên tích lũy tối thiểu 120 tín chỉ và duy trì GPA trên 2.0 để tốt nghiệp.",
-                "thought": "Câu hỏi chung về quy chế học vụ, trả lời trực tiếp không cần gọi Tool."
-            }
+
+        # Trích xuất mã vận đơn nếu có trong câu hỏi (không chỉ giới hạn ở 2 mã đã biết)
+        tracking_code = None
+        match = re.search(r'\bvn\d+\b', prompt_lower)
+        if match:
+            tracking_code = match.group(0).upper()
+
+        # 1. Nếu câu hỏi về cập nhật trạng thái đơn hàng
+        if "cập nhật" in prompt_lower or "đổi trạng thái" in prompt_lower or "trạng thái" in prompt_lower:
+            if tracking_code:
+                return {
+                    "type": "tool_call",
+                    "tool_name": "update_order_status",
+                    "arguments": {
+                        "tracking_code": tracking_code,
+                        "new_status": "đang vận chuyển"
+                    },
+                    "thought": f"Người dùng yêu cầu cập nhật trạng thái đơn hàng {tracking_code}. Tôi sẽ gọi tool update_order_status."
+                }
+
+        # 2. Nếu câu hỏi về vị trí kho
+        if "kho" in prompt_lower or "warehouse" in prompt_lower or "vị trí" in prompt_lower:
+            if tracking_code:
+                return {
+                    "type": "tool_call",
+                    "tool_name": "get_warehouse_location",
+                    "arguments": {
+                        "tracking_code": tracking_code
+                    },
+                    "thought": f"Người dùng muốn biết vị trí lưu kho của đơn hàng {tracking_code}. Tôi sẽ gọi tool get_warehouse_location."
+                }
+
+        # 3. Nếu câu hỏi về tra cứu mã vận đơn / thông tin đơn hàng
+        if tracking_code or "tra cứu" in prompt_lower or "mã vận đơn" in prompt_lower or "đơn hàng" in prompt_lower:
+            if tracking_code:
+                return {
+                    "type": "tool_call",
+                    "tool_name": "track_order",
+                    "arguments": {
+                        "tracking_code": tracking_code
+                    },
+                    "thought": f"Người dùng muốn tra cứu thông tin đơn hàng {tracking_code}. Tôi sẽ gọi tool track_order."
+                }
+
+        # 4. Nếu câu hỏi chung về vận chuyển / kho vận
+        return {
+            "type": "text",
+            "content": (
+                "[Mock Agent Response]: Xin chào! Tôi có thể hỗ trợ tra cứu đơn hàng, "
+                "kiểm tra vị trí kho và cập nhật trạng thái đơn hàng."
+            ),
+            "thought": "Câu hỏi chung về kho vận, không cần gọi Tool."
+        }
 
 
 class GeminiProvider(BaseLLMProvider):
@@ -213,7 +245,7 @@ class OpenAIProvider(BaseLLMProvider):
 
 def get_llm_provider() -> BaseLLMProvider:
     """Factory function khởi tạo Provider theo LLM_PROVIDER env variable"""
-    provider_type = os.getenv("LLM_PROVIDER", "gemini").lower()
+    provider_type = os.getenv("LLM_PROVIDER", "openai").lower()
     
     if provider_type == "gemini":
         key = os.getenv("GEMINI_API_KEY")

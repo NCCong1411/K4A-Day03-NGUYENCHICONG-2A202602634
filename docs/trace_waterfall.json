@@ -1,29 +1,126 @@
 [
   {
     "step": 1,
-    "query": "Chào bạn, bạn có thể giới thiệu quy chế học vụ cơ bản của Đại học VinUni không?",
+    "query": "Chào bạn, bạn có thể hỗ trợ tra cứu đơn hàng và kho vận không?",
     "action_type": "FINAL_ANSWER",
-    "thought": "Câu hỏi chung về quy chế học vụ, trả lời trực tiếp không cần gọi Tool.",
-    "output": "[Mock Agent Response]: Xin chào! Quy chế học vụ VinUni yêu cầu sinh viên tích lũy tối thiểu 120 tín chỉ và duy trì GPA trên 2.0 để tốt nghiệp.",
-    "latency_ms": 2845.93
+    "thought": "OpenAI phản hồi trực tiếp bằng văn bản (không cần gọi công cụ).",
+    "output": "Chào bạn! Tôi có thể giúp bạn tra cứu trạng thái đơn hàng và vị trí lưu kho. Bạn cần cung cấp mã vận đơn hoặc mã đơn hàng để tôi có thể hỗ trợ bạn tốt hơn.",
+    "latency_ms": 4478.6
   },
   {
     "step": 1,
-    "query": "Hãy tra cứu thông tin học vụ của sinh viên SV2026001.",
+    "query": "Hãy tra cứu thông tin đơn hàng VN2026001.",
     "action_type": "TOOL_EXECUTION",
-    "tool_name": "academic_query",
+    "tool_name": "track_order",
     "arguments": {
-      "student_id": "SV2026001"
+      "tracking_code": "VN2026001"
     },
-    "observation": {},
-    "latency_ms": 799.12
+    "observation": {
+      "status": "SUCCESS",
+      "tracking_code": "VN2026001",
+      "data": {
+        "tracking_code": "VN2026001",
+        "order_id": "DH-2026-001",
+        "customer_name": "Nguyễn Văn An",
+        "item": "Laptop Dell XPS 13",
+        "quantity": 1,
+        "warehouse_location": "Kho Hà Nội - Tầng 2 - Khu A",
+        "status": "Đang đóng gói",
+        "destination": "TP.HCM",
+        "eta": "2026-09-15",
+        "carrier": "Giao hàng nhanh"
+      }
+    },
+    "latency_ms": 1543.13
   },
   {
     "step": 2,
-    "query": "Hãy tra cứu thông tin học vụ của sinh viên SV2026001.",
+    "query": "Hãy tra cứu thông tin đơn hàng VN2026001.",
     "action_type": "FINAL_ANSWER",
     "thought": "Tổng hợp kết quả từ MCP Server thành công.",
-    "output": "Chưa thể trả lời chi tiết do chưa nhận được dữ liệu từ MCP Server (hãy hoàn thành TODO 2.1).",
+    "output": "Đơn hàng VN2026001 (DH-2026-001) thuộc về Nguyễn Văn An. Sản phẩm: Laptop Dell XPS 13, Số lượng: 1. Trạng thái hiện tại: Đang đóng gói. Vị trí kho: Kho Hà Nội - Tầng 2 - Khu A. Điểm đến: TP.HCM. Dự kiến giao: 2026-09-15.",
+    "latency_ms": 10.0
+  },
+  {
+    "step": 1,
+    "query": "Cập nhật trạng thái đơn hàng VN2026001 thành Đang giao hàng.",
+    "action_type": "TOOL_EXECUTION",
+    "tool_name": "update_order_status",
+    "arguments": {
+      "tracking_code": "VN2026001",
+      "new_status": "Đang giao hàng"
+    },
+    "observation": {
+      "status": "SUCCESS",
+      "tracking_code": "VN2026001",
+      "data": {
+        "tracking_code": "VN2026001",
+        "order_id": "DH-2026-001",
+        "status": "Đang giao hàng",
+        "last_note": "Cập nhật trạng thái theo yêu cầu của đội vận hành",
+        "warehouse_location": "Kho Hà Nội - Tầng 2 - Khu A"
+      },
+      "message": "Đã cập nhật trạng thái đơn hàng VN2026001 thành 'Đang giao hàng'."
+    },
+    "latency_ms": 2016.27
+  },
+  {
+    "step": 2,
+    "query": "Cập nhật trạng thái đơn hàng VN2026001 thành Đang giao hàng.",
+    "action_type": "FINAL_ANSWER",
+    "thought": "Tổng hợp kết quả từ MCP Server thành công.",
+    "output": "Đã cập nhật trạng thái đơn hàng VN2026001 thành 'Đang giao hàng'. Ghi chú: Cập nhật trạng thái theo yêu cầu của đội vận hành. Vị trí kho hiện tại: Kho Hà Nội - Tầng 2 - Khu A.",
+    "latency_ms": 10.0
+  },
+  {
+    "step": 1,
+    "query": "Cho tôi biết vị trí lưu kho hiện tại của đơn hàng VN2026001.",
+    "action_type": "TOOL_EXECUTION",
+    "tool_name": "get_warehouse_location",
+    "arguments": {
+      "tracking_code": "VN2026001"
+    },
+    "observation": {
+      "status": "SUCCESS",
+      "tracking_code": "VN2026001",
+      "data": {
+        "tracking_code": "VN2026001",
+        "order_id": "DH-2026-001",
+        "warehouse_location": "Kho Hà Nội - Tầng 2 - Khu A",
+        "status": "Đang giao hàng",
+        "destination": "TP.HCM"
+      }
+    },
+    "latency_ms": 1500.44
+  },
+  {
+    "step": 2,
+    "query": "Cho tôi biết vị trí lưu kho hiện tại của đơn hàng VN2026001.",
+    "action_type": "FINAL_ANSWER",
+    "thought": "Tổng hợp kết quả từ MCP Server thành công.",
+    "output": "Đơn hàng VN2026001 đang lưu tại Kho Hà Nội - Tầng 2 - Khu A. Trạng thái hiện tại: Đang giao hàng. Điểm đến: TP.HCM.",
+    "latency_ms": 10.0
+  },
+  {
+    "step": 1,
+    "query": "Tra cứu mã vận đơn VN9999999",
+    "action_type": "TOOL_EXECUTION",
+    "tool_name": "track_order",
+    "arguments": {
+      "tracking_code": "VN9999999"
+    },
+    "observation": {
+      "status": "NOT_FOUND",
+      "message": "Không tìm thấy dữ liệu đơn hàng với mã vận đơn hoặc mã đơn hàng 'VN9999999'."
+    },
+    "latency_ms": 927.32
+  },
+  {
+    "step": 2,
+    "query": "Tra cứu mã vận đơn VN9999999",
+    "action_type": "FINAL_ANSWER",
+    "thought": "Tổng hợp kết quả từ MCP Server thành công.",
+    "output": "Không tìm thấy dữ liệu đơn hàng với mã vận đơn hoặc mã đơn hàng 'VN9999999'.",
     "latency_ms": 10.0
   }
 ]

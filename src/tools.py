@@ -11,21 +11,69 @@ from typing import Dict, Any
 # ==============================================================================
 
 TOOLS_SCHEMA = [
-    # Tool 1: Đã được định nghĩa mẫu sẵn cho Học viên tham khảo
     {
-        "name": "academic_query",
-        "description": "Tra cứu hồ sơ và thông tin học vụ của sinh viên VinUni bằng mã sinh viên.",
+        "name": "track_order",
+        "description": "Tra cứu chi tiết đơn hàng và mã vận đơn bằng mã vận đơn hoặc mã đơn hàng.",
         "parameters": {
             "type": "object",
             "properties": {
-                "student_id": {
+                "tracking_code": {
                     "type": "string",
-                    "description": "Mã sinh viên cần tra cứu (ví dụ: 'SV2026001')"
+                    "description": "Mã vận đơn cần tra cứu (ví dụ: 'VN2026001')"
+                },
+                "order_id": {
+                    "type": "string",
+                    "description": "Mã đơn hàng nếu người dùng cung cấp (ví dụ: 'DH-2026-001')"
                 }
             },
-            "required": ["student_id"]
+            "required": []
         }
     },
+    {
+        "name": "get_warehouse_location",
+        "description": "Tra cứu vị trí lưu kho hiện tại của một đơn hàng hoặc mã vận đơn.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "tracking_code": {
+                    "type": "string",
+                    "description": "Mã vận đơn cần kiểm tra vị trí lưu kho"
+                },
+                "order_id": {
+                    "type": "string",
+                    "description": "Mã đơn hàng nếu người dùng cung cấp"
+                }
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "update_order_status",
+        "description": "Cập nhật trạng thái mới cho đơn hàng và ghi lại nhật ký xử lý kho vận.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "tracking_code": {
+                    "type": "string",
+                    "description": "Mã vận đơn cần cập nhật trạng thái"
+                },
+                "order_id": {
+                    "type": "string",
+                    "description": "Mã đơn hàng nếu người dùng cung cấp"
+                },
+                "new_status": {
+                    "type": "string",
+                    "description": "Trạng thái mới của đơn hàng (ví dụ: 'Đang giao hàng', 'Đã giao', 'Đang đóng gói')"
+                },
+                "note": {
+                    "type": "string",
+                    "description": "Ghi chú bổ sung cho cập nhật trạng thái"
+                }
+            },
+            "required": ["new_status"]
+        }
+    }
+]
     
     # --------------------------------------------------------------------------
     # TODO 1.2: HỌC VIÊN HOÀN THIỆN TOOL SCHEMA CHO 'schedule_appointment'
@@ -37,75 +85,126 @@ TOOLS_SCHEMA = [
     #    - advisor_name (string): Tên cố vấn học tập
     # 3. Khai báo danh sách các trường bắt buộc (required).
     # --------------------------------------------------------------------------
-    {
-        "name": "schedule_appointment",
-        "description": "Đặt lịch hẹn tư vấn học vụ với Cố vấn học tập VinUni.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                # TODO 1.2: Khai báo các thuộc tính tham số cho Tool tại đây...
-            },
-            "required": [] # TODO 1.2: Khai báo danh sách các trường bắt buộc tại đây...
-        }
-    }
-]
 
 # ==============================================================================
 # 2. MÔ PHỎNG DỮ LIỆU & HÀM THỰC THI TOOL (EXECUTION LAYER)
 # ==============================================================================
 
 MOCK_DATABASE = {
-    "SV2026001": {
-        "full_name": "Nguyễn Văn An",
-        "class": "AI-K4",
-        "gpa": 3.85,
-        "email": "an.nv@vinuni.edu.vn",
-        "status": "Đang học",
-        "advisor": "PGS.TS Nguyễn Văn A"
+    "VN2026001": {
+        "tracking_code": "VN2026001",
+        "order_id": "DH-2026-001",
+        "customer_name": "Nguyễn Văn An",
+        "item": "Laptop Dell XPS 13",
+        "quantity": 1,
+        "warehouse_location": "Kho Hà Nội - Tầng 2 - Khu A",
+        "status": "Đang đóng gói",
+        "destination": "TP.HCM",
+        "eta": "2026-09-15",
+        "carrier": "Giao hàng nhanh"
     },
-    "SV2026002": {
-        "full_name": "Trần Thị Bình",
-        "class": "AI-K4",
-        "gpa": 3.60,
-        "email": "binh.tt@vinuni.edu.vn",
-        "status": "Đang học",
-        "advisor": "TS. Lê Thị B"
+    "VN2026002": {
+        "tracking_code": "VN2026002",
+        "order_id": "DH-2026-002",
+        "customer_name": "Trần Thị Bình",
+        "item": "Điện thoại Samsung Galaxy S24",
+        "quantity": 1,
+        "warehouse_location": "Kho Đà Nẵng - Khu B1",
+        "status": "Đang vận chuyển",
+        "destination": "Hà Nội",
+        "eta": "2026-09-16",
+        "carrier": "Giao hàng tiết kiệm"
     }
 }
 
 
-def execute_academic_query(student_id: str) -> str:
-    """Thực thi tra cứu học vụ theo mã sinh viên"""
-    student = MOCK_DATABASE.get(student_id.strip().upper())
-    if student:
+def _normalize(value: str) -> str:
+    return (value or "").strip().upper()
+
+
+def _find_order(tracking_code: str = "", order_id: str = "") -> Dict[str, Any]:
+    normalized_tracking_code = _normalize(tracking_code)
+    normalized_order_id = (order_id or "").strip().upper()
+
+    if normalized_tracking_code and normalized_tracking_code in MOCK_DATABASE:
+        return MOCK_DATABASE[normalized_tracking_code]
+
+    for order in MOCK_DATABASE.values():
+        if normalized_order_id and order.get("order_id", "").upper() == normalized_order_id:
+            return order
+
+    return {}
+
+
+def execute_track_order(tracking_code: str = "", order_id: str = "") -> str:
+    """Thực thi tra cứu chi tiết đơn hàng theo mã vận đơn hoặc mã đơn hàng."""
+    order = _find_order(tracking_code, order_id)
+    if order:
         return json.dumps({
             "status": "SUCCESS",
-            "student_id": student_id,
-            "data": student
+            "tracking_code": order.get("tracking_code", tracking_code or ""),
+            "data": order
         }, ensure_ascii=False)
-    else:
+
+    return json.dumps({
+        "status": "NOT_FOUND",
+        "message": f"Không tìm thấy dữ liệu đơn hàng với mã vận đơn hoặc mã đơn hàng '{tracking_code or order_id}'."
+    }, ensure_ascii=False)
+
+
+def execute_get_warehouse_location(tracking_code: str = "", order_id: str = "") -> str:
+    """Thực thi tra cứu vị trí lưu kho hiện tại của đơn hàng."""
+    order = _find_order(tracking_code, order_id)
+    if order:
+        return json.dumps({
+            "status": "SUCCESS",
+            "tracking_code": order.get("tracking_code", tracking_code or ""),
+            "data": {
+                "tracking_code": order.get("tracking_code"),
+                "order_id": order.get("order_id"),
+                "warehouse_location": order.get("warehouse_location"),
+                "status": order.get("status"),
+                "destination": order.get("destination")
+            }
+        }, ensure_ascii=False)
+
+    return json.dumps({
+        "status": "NOT_FOUND",
+        "message": f"Không tìm thấy dữ liệu vị trí lưu kho cho mã vận đơn hoặc mã đơn hàng '{tracking_code or order_id}'."
+    }, ensure_ascii=False)
+
+
+def execute_update_order_status(tracking_code: str = "", order_id: str = "", new_status: str = "", note: str = "") -> str:
+    """Thực thi cập nhật trạng thái đơn hàng."""
+    order = _find_order(tracking_code, order_id)
+    if not order:
         return json.dumps({
             "status": "NOT_FOUND",
-            "message": f"Không tìm thấy dữ liệu sinh viên có mã '{student_id}'"
+            "message": f"Không tìm thấy dữ liệu đơn hàng để cập nhật với mã vận đơn hoặc mã đơn hàng '{tracking_code or order_id}'."
         }, ensure_ascii=False)
 
+    order["status"] = new_status
+    order["last_note"] = note or "Cập nhật trạng thái theo yêu cầu của đội vận hành"
 
-def execute_schedule_appointment(student_id: str, datetime_str: str, advisor_name: str = "PGS.TS Nguyễn Văn A") -> str:
-    """Thực thi đặt lịch hẹn tư vấn học vụ"""
     return json.dumps({
         "status": "SUCCESS",
-        "booking_id": f"BK-{student_id}-99",
-        "student_id": student_id,
-        "datetime": datetime_str,
-        "advisor": advisor_name,
-        "message": f"Đặt lịch thành công cho sinh viên {student_id} với {advisor_name} vào lúc {datetime_str}."
+        "tracking_code": order.get("tracking_code", tracking_code or ""),
+        "data": {
+            "tracking_code": order.get("tracking_code"),
+            "order_id": order.get("order_id"),
+            "status": order.get("status"),
+            "last_note": order.get("last_note"),
+            "warehouse_location": order.get("warehouse_location")
+        },
+        "message": f"Đã cập nhật trạng thái đơn hàng {order.get('tracking_code')} thành '{new_status}'."
     }, ensure_ascii=False)
 
 
 # Router gọi tool thực tế
 TOOL_ROUTER = {
-    "academic_query": execute_academic_query,
-    "schedule_appointment": execute_schedule_appointment
+    "track_order": execute_track_order,
+    "get_warehouse_location": execute_get_warehouse_location,
+    "update_order_status": execute_update_order_status
 }
 
 def dispatch_tool_call(tool_name: str, arguments: Dict[str, Any]) -> str:
