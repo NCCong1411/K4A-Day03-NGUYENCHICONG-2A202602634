@@ -11,11 +11,11 @@
 
 | Tiêu chí Đánh giá           | Mức độ (1 - 5) | Giải trình chi tiết lý do chọn điểm (có bằng chứng)                                                                                                                                                                                                                                                                                                                           |
 | --------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1. Multi-step Reasoning** | **5 / 5**      | Agent đã thể hiện rõ chuỗi suy luận Thought → Action → Observation. Bằng chứng nằm ở [docs/trace_waterfall.json](docs/trace_waterfall.json): với TC02, TC03, TC04 có các bước `TOOL_EXECUTION` rồi mới đến `FINAL_ANSWER`.                                                                                                                                                    |
+| **1. Multi-step Reasoning** | **4/ 5**       | Agent đã thể hiện rõ chuỗi suy luận Thought → Action → Observation. Bằng chứng nằm ở [docs/trace_waterfall.json](docs/trace_waterfall.json): với TC02, TC03, TC04 có các bước `TOOL_EXECUTION` rồi mới đến `FINAL_ANSWER`.                                                                                                                                                    |
 | **2. Tool Interaction**     | **4 / 5**      | Hệ thống đã tương tác thành công với MCP Server và gọi đúng 3 tool chính: `track_order`, `get_warehouse_location`, `update_order_status`. Bằng chứng nằm trong [docs/trace_waterfall.json](docs/trace_waterfall.json), nơi `tool_name` xuất hiện đúng theo từng test case. Tuy nhiên, vì TC05 vẫn còn một phần chưa hoàn toàn khớp theo kỳ vọng ban đầu nên chưa chấm tối đa. |
 | **3. Dynamic Decision**     | **4 / 5**      | Agent biết khi nào cần gọi tool và khi nào không. Bằng chứng: TC01 không gọi tool, còn TC02–TC04 đều gọi tool phù hợp. Logic này phù hợp với prompt trong [src/prompts.py](src/prompts.py) và mock routing trong [src/providers.py](src/providers.py).                                                                                                                        |
 | **4. Long Horizon Goal**    | **4 / 5**      | Agent duy trì mục tiêu xuyên suốt test suite. Bằng chứng là [docs/trace_waterfall.json](docs/trace_waterfall.json) chứa nhiều step cho nhiều câu hỏi khác nhau trong cùng một phiên chạy, từ câu hỏi chung đến tra cứu đơn hàng, cập nhật trạng thái và vị trí kho.                                                                                                           |
-| **TỔNG ĐIỂM AGENTIC FIT**   | **17 / 20**    | Tổng điểm đạt được là 17/20 vì hệ thống đã có khả năng suy luận, gọi tool, và duy trì luồng ReAct tốt. Còn thiếu 3 điểm vì TC05 chưa hoàn toàn đạt đúng kỳ vọng hoàn hảo theo yêu cầu edge case.                                                                                                                                                                              |
+| **TỔNG ĐIỂM AGENTIC FIT**   | **16 / 20**    | Tổng điểm đạt được là 16/20 vì hệ thống đã có khả năng suy luận, gọi tool, và duy trì luồng ReAct. Tuy nhiên thì chưa chắc đã là cách làm tốt nhất.                                                                                                                                                                                                                           |
 
 ---
 
@@ -28,7 +28,7 @@ Dán 1 đoạn trích xuất log tiêu biểu từ file `docs/trace_waterfall.js
 Ở đây, em dùng OpenAI
 
 ```json
-      {
+    {
     "step": 1,
     "query": "Chào bạn, bạn có thể hỗ trợ tra cứu đơn hàng và kho vận không?",
     "action_type": "FINAL_ANSWER",

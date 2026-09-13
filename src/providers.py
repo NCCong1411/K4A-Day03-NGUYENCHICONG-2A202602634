@@ -47,12 +47,14 @@ class MockOfflineProvider(BaseLLMProvider):
         # 1. Nếu câu hỏi về cập nhật trạng thái đơn hàng
         if "cập nhật" in prompt_lower or "đổi trạng thái" in prompt_lower or "trạng thái" in prompt_lower:
             if tracking_code:
+                status_match = re.search(r"\b(?:thành|sang)\s+(.+?)(?:[.!?]|$)", prompt, re.IGNORECASE)
+                requested_status = status_match.group(1).strip() if status_match else "Đang giao hàng"
                 return {
                     "type": "tool_call",
                     "tool_name": "update_order_status",
                     "arguments": {
                         "tracking_code": tracking_code,
-                        "new_status": "đang vận chuyển"
+                        "new_status": requested_status
                     },
                     "thought": f"Người dùng yêu cầu cập nhật trạng thái đơn hàng {tracking_code}. Tôi sẽ gọi tool update_order_status."
                 }
